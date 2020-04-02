@@ -107,3 +107,6 @@ lsd = Dict("longstring" => longstring)
 save(fn, lsd)
 @test isequal(load(fn), lsd)  
 
+# Issue #183
+jfn, _ = mktemp()
+@test_throws ArgumentError jldopen(jfn, "r")
