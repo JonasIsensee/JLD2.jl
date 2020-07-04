@@ -202,6 +202,9 @@ function jldopen(fname::AbstractString, wr::Bool, create::Bool, truncate::Bool, 
                  compress::Bool=false, mmaparrays::Bool=false) where T<:Union{Type{IOStream},Type{MmapIO}}
     exists = isfile(fname)
     if exists
+        if filesize(fname) == 0
+            throw(ArgumentError("File exists but is empty"))
+        end
         rname = realpath(fname)
         if haskey(OPEN_FILES, rname)
             ref = OPEN_FILES[rname]
