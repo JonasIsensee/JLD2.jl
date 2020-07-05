@@ -119,13 +119,18 @@ end
 
 Base.show(io::IO, ::MmapIO) = print(io, "MmapIO")
 
+# This line is necessary to avoid bug #55
+#if false #Sys.islinux()
 if Sys.islinux()
     # This is substantially faster than truncate on Linux, but slower on OS X.
     # TODO: Benchmark on Windows
-    grow(io::IOStream, sz::Integer) =
-        systemerror("pwrite", ccall(:jl_pwrite, Cssize_t,
-                                    (Cint, Ref{UInt8}, UInt, Int64),
-                                    fd(io), UInt8(0), 1, sz - 1) < 1)
+    grow(io::IOStream, sz::Integer) = begin
+        #systemerror("pwrite", ccall(:jl_pwrite, Cssize_t,
+        #                            (Cint, Ref{UInt8}, UInt, Int64),
+        #                            fd(io), UInt8(0), 1, sz - 1) < 1)
+        failure = ccall(:jl_ftruncate, Cint, (Cint, Int64), fd(io), sz)
+        Base.systemerror(:ftruncate, failure != 0)
+        end
 else
     grow(io::IOStream, sz::Integer) = truncate(io, sz)
 end
@@ -137,6 +142,8 @@ function Base.resize!(io::MmapIO, newend::Ptr{Cvoid})
     ptr = io.startptr
     newsz = Int(max(newend - ptr, io.curptr - ptr + FILE_GROW_SIZE))
     @static if !Sys.iswindows()
+        #This msync(io) call is needed to avoid #55 on NFS systems
+        #msync(io)
         grow(io.f, newsz)
     end
 
