@@ -135,8 +135,10 @@ function Base.resize!(io::MmapIO, newend::Ptr{Cvoid})
 
     # Resize file
     ptr = io.startptr
+    #newsz = Int(max(newend - ptr, io.curptr - ptr + FILE_GROW_SIZE))
     #newsz = Int(max(newend - ptr + 102, io.curptr - ptr + FILE_GROW_SIZE))
-    newsz = Int(max(newend - ptr, io.curptr - ptr)) + FILE_GROW_SIZE
+    #newsz = Int(max(newend - ptr, io.curptr - ptr)) + FILE_GROW_SIZE
+    newsz = Int(newend - ptr)
     @static if !Sys.iswindows()
         grow(io.f, newsz)
     end
